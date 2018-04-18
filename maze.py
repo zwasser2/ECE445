@@ -135,34 +135,92 @@ class Maze:
 
     def getHeight(self):
         return self.map.count('\n') + 1 #Add one because last line wont have new line.
+    def turnDirections(self,arr):
+        if(len(arr)==0):
+            return []
+        returnArray=[]
+        startDirection="Go Up"#Orientation at P
+        print("WE ARE CURRENTLY STARTING AT P IN DIRECTION: "+ startDirection)
+        map={"Go Up":1,"Go Right":2,"Go Down":3,"Go Left":4}
+        returnArray.append("Turn "+str(90*(map[startDirection]-map[arr[0]])) +" Degrees")
+        for index,direction in enumerate(arr):
+            try:
+                turnValue=map[direction]-map[arr[index+1]]
+                returnArray.append("Turn "+str(turnValue*-90)+ " Degrees")
+            except:
+                pass
+        return returnArray
+#Pose Stamped message
+    def aStar(self):
+        exploreTuples = [(self.startingNode, self.startingNode.hueristic)]
+        exploredNodes = []
+        while (len(exploreTuples) != 0):
+            lowestWeightNode = (
+            None, self.width + self.height + 100000000)  # This is max size of manhattan distance + a lot
+            for node, weight in exploreTuples:
+                if weight <= lowestWeightNode[1]:
+                    lowestWeightNode = (node, weight)
+            if (lowestWeightNode[0] == None):
+                print("FOOBAR")
+            exploreTuples.remove(lowestWeightNode)
+            outputArray=[]
+            # This goes from . to P so we need to reverse everything
+            if (lowestWeightNode[0].getChar() == '.'):
+                if(lowestWeightNode[0].nodeAbove==lowestWeightNode[0].nodesLeadingToThis[0]):
+                    outputArray.append("Go Down")
+                if (lowestWeightNode[0].nodeBelow == lowestWeightNode[0].nodesLeadingToThis[0]):
+                    outputArray.append("Go Up")
+                if (lowestWeightNode[0].nodeLeft == lowestWeightNode[0].nodesLeadingToThis[0]):
+                    outputArray.append("Go Right")
+                if (lowestWeightNode[0].nodeRight == lowestWeightNode[0].nodesLeadingToThis[0]):
+                    outputArray.append("Go Left")
+                for index,nodes in enumerate(lowestWeightNode[0].nodesLeadingToThis):
+                    if (nodes.getChar() != 'P'):  # Commenting this out so it doesnt edit map for unoptimzzed testing
+                        nodes.setCharacter('o')
+                        #This goes from . to P so we need to reverse everything
+                        if(nodes.nodeAbove==lowestWeightNode[0].nodesLeadingToThis[index+1]):
+                            outputArray.append("Go Down")
+                        if(nodes.nodeBelow==lowestWeightNode[0].nodesLeadingToThis[index+1]):
+                            outputArray.append("Go Up")
+                        if(nodes.nodeLeft==lowestWeightNode[0].nodesLeadingToThis[index+1]):
+                            outputArray.append("Go Right")
+                        if(nodes.nodeRight==lowestWeightNode[0].nodesLeadingToThis[index+1]):#
+                            outputArray.append("Go Left")
+
+
+                self.printNodeList(self.nodeList)
+                print(outputArray[::-1])
+                print(self.turnDirections(outputArray[::-1]))
+                return len(lowestWeightNode[0].nodesLeadingToThis) + 1  # Include +1 to add distance to goal
+            exploredNodes.append(lowestWeightNode[0])
+            nodesBefore = [lowestWeightNode[0]] + lowestWeightNode[0].nodesLeadingToThis
+            # Update childrens nodesBefore then put in explore
+            if (lowestWeightNode[0].nodeBelow.getChar() != '%' and lowestWeightNode[0].nodeBelow not in exploredNodes):
+                lowestWeightNode[0].nodeBelow.nodesLeadingToThis = nodesBefore
+                exploreTuples.append(
+                    (lowestWeightNode[0].nodeBelow, lowestWeightNode[0].nodeBelow.hueristic + len(nodesBefore)))
+            if (lowestWeightNode[0].nodeAbove.getChar() != '%' and lowestWeightNode[0].nodeAbove not in exploredNodes):
+                lowestWeightNode[0].nodeAbove.nodesLeadingToThis = nodesBefore
+                exploreTuples.append(
+                    (lowestWeightNode[0].nodeAbove, lowestWeightNode[0].nodeAbove.hueristic + len(nodesBefore)))
+            if (lowestWeightNode[0].nodeLeft.getChar() != '%' and lowestWeightNode[0].nodeLeft not in exploredNodes):
+                lowestWeightNode[0].nodeLeft.nodesLeadingToThis = nodesBefore
+                exploreTuples.append(
+                    (lowestWeightNode[0].nodeLeft, lowestWeightNode[0].nodeLeft.hueristic + len(nodesBefore)))
+            if (lowestWeightNode[0].nodeRight.getChar() != '%' and lowestWeightNode[0].nodeRight not in exploredNodes):
+                lowestWeightNode[0].nodeRight.nodesLeadingToThis = nodesBefore
+                exploreTuples.append(
+                    (lowestWeightNode[0].nodeRight, lowestWeightNode[0].nodeRight.hueristic + len(nodesBefore)))
+        return -1
 
 
 #THIS IS FOR TESTING ONLY, WRITE MAIN CODE IN main.py
 if __name__ == "__main__":
-    inmap1 = """%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%         % %           %     %           %           %    .%
-% %%%% %% % % %%%%% %%%%% %%% % %%%% %% %%% %% %% %%% % % % %
-% %     %   %     %       %   %       %     %   % % %   % % %
-% % %%% % %%%% %% %%%%%%%%% %%%%% %%% % %%% % % % % %%%%% % %
-% %   %   %       %       %       %   %   % % % %     %   % %
-% % %%% %%% %%% %%% % %%% %%%% %% % %%% % %%% % %%% %%% %%% %
-%   %     %     %   % %         % % %   %     %   % %   % % %
-% %%% %%% %%%%% %%%%% % %%% %%% %%%%% %%%%%% %%%% %%% %%% % %
-%     %       %         % % %         %   %     %     %   % %
-% %%%%% %%%%% %%%%% %%% % % % %%%%%%%%% % % %%% %%% %%% %%% %
-% %   % %   %         % %   % %     %   % % %           %   %
-% % %%% % %%% %%%%% % % %%%%% % % %%% % % %%% %%%%% %%%%% %%%
-%   %   % %       % % %   %   % %   % % %     %     %   % % %
-% %%% %%% % % %%% %%% %%% % %%% %%% % % %%%%%%%%% %%% % % % %
-% %   %   % %   %   % %   % %     %   %   %     % %   %   % %
-%   %%% % % % % % % % % %%% % %%%%%%% %%% % %%% % % %%%%%%% %
-% %   % %   % %   %   % %                 % %   % % %       %
-% %%% %%% %%% %%% % %%% % %%% % %%%%%% %%%% % %%%%% % % %%% %
-%   %         %   % %   % %   %         %   % %     % % %   %
-%%% %%% % %%%%% %%%%% %%%%% %%% %%%%%%% % %%% % %%%%%%% % %%%
-%P    %       %             %         %     %           %   %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"""
-
+    inmap1 = """%%%%%%%
+%P%.  %
+% %%% %
+%     %
+%%%%%%%"""
 
     maze = Maze(inmap1)
-    maze.parse()
+    maze.aStar()
