@@ -4,10 +4,12 @@ from node import Node
 XDIM = 500
 YDIM = 500
 WINSIZE = [XDIM,YDIM]
-from geometry_msgs.mgs import PoseStamped
+from geometry_msgs.msg import PoseStamped
 import std_msgs.msg
 import tf
-
+import rospy
+import time
+import cv2
 
 class Maze:
     startingNode = None
@@ -26,9 +28,7 @@ class Maze:
         self.exitNode = []
         self.nodeList = []
         self.parse()
-        pub=rospy.Publisher('chatter',PoseStamped,queue_size=1000)
-        rospy.init_node('demo_pub_node')
-        r=rospy.Rate(1)
+        
 
 
 
@@ -198,6 +198,9 @@ class Maze:
                 directionToGo=(outputArray[::-1])
                 directionTurn=self.turnDirections(outputArray[::-1])
                 poseArray=[]
+		pub=rospy.Publisher('chatter',PoseStamped, queue_size=1000)
+		rospy.init_node('demo_pub_node')		
+		r=rospy.Rate(1)
                 for index,direction in enumerate(directionToGo):
                     p=PoseStamped()
                     p.header.stamp=rospy.get_rostime()
@@ -205,16 +208,27 @@ class Maze:
                     p.pose.position.x=1#THIS MIGHT NEED TO BE CHANGED LATER. I ASSUME THAT IT IS ROTATE THEN MOVE
                     p.pose.position.y=0
                     p.pose.position.z=0
-                    q=tf.transformation.quaternion_from_euler(directionTurn[index],0,0)
+                    q=tf.transformations.quaternion_from_euler(directionTurn[index],0,0)
                     p.pose.orientation.x=q[0]
                     p.pose.orientation.y=q[1]
                     p.pose.orientation.z=q[2]
                     p.pose.orientation.w=q[3]
                     poseArray.append(p)
 
+		#Set up ROS publishing
+		
+		i=0
+                while not rospy.is_shutdown():
+		    try:
+			pub.publish(poseArray[i])
+			key = cv2.waitKey(1) & 0xFF
 
+	   		# if the `q` key was pressed, break from the loop
+	   		if key == ord("i"):
+	      		    i+=1
+		    except Exception as e:
+		        print(e)
 
-                print(p)
                 return len(lowestWeightNode[0].nodesLeadingToThis) + 1  # Include +1 to add distance to goal
             exploredNodes.append(lowestWeightNode[0])
             nodesBefore = [lowestWeightNode[0]] + lowestWeightNode[0].nodesLeadingToThis
