@@ -4,7 +4,9 @@ from node import Node
 XDIM = 500
 YDIM = 500
 WINSIZE = [XDIM,YDIM]
-
+from geometry_msgs.mgs import PoseStamped
+import std_msgs.msg
+import tf
 
 
 class Maze:
@@ -24,6 +26,10 @@ class Maze:
         self.exitNode = []
         self.nodeList = []
         self.parse()
+        pub=rospy.Publisher('chatter',PoseStamped,queue_size=1000)
+        rospy.init_node('demo_pub_node')
+        r=rospy.Rate(1)
+
 
 
 #Bulk of the ECE445 code is going to go here
@@ -142,11 +148,11 @@ class Maze:
         startDirection="Go Up"#Orientation at P
         print("WE ARE CURRENTLY STARTING AT P IN DIRECTION: "+ startDirection)
         map={"Go Up":1,"Go Right":2,"Go Down":3,"Go Left":4}
-        returnArray.append("Turn "+str(90*(map[startDirection]-map[arr[0]])) +" Degrees")
+        returnArray.append(90*(map[startDirection]-map[arr[0]]))
         for index,direction in enumerate(arr):
             try:
                 turnValue=map[direction]-map[arr[index+1]]
-                returnArray.append("Turn "+str(turnValue*-90)+ " Degrees")
+                returnArray.append((turnValue*-90))
             except:
                 pass
         return returnArray
@@ -189,8 +195,26 @@ class Maze:
 
 
                 self.printNodeList(self.nodeList)
-                print(outputArray[::-1])
-                print(self.turnDirections(outputArray[::-1]))
+                directionToGo=(outputArray[::-1])
+                directionTurn=self.turnDirections(outputArray[::-1])
+                poseArray=[]
+                for index,direction in enumerate(directionToGo):
+                    p=PoseStamped()
+                    p.header.stamp=rospy.get_rostime()
+                    p.header.frame_id='base_link'
+                    p.pose.position.x=1#THIS MIGHT NEED TO BE CHANGED LATER. I ASSUME THAT IT IS ROTATE THEN MOVE
+                    p.pose.position.y=0
+                    p.pose.position.z=0
+                    q=tf.transformation.quaternion_from_euler(directionTurn[index],0,0)
+                    p.pose.orientation.x=q[0]
+                    p.pose.orientation.y=q[1]
+                    p.pose.orientation.z=q[2]
+                    p.pose.orientation.w=q[3]
+                    poseArray.append(p)
+
+
+
+                print(p)
                 return len(lowestWeightNode[0].nodesLeadingToThis) + 1  # Include +1 to add distance to goal
             exploredNodes.append(lowestWeightNode[0])
             nodesBefore = [lowestWeightNode[0]] + lowestWeightNode[0].nodesLeadingToThis
