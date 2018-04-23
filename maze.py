@@ -28,6 +28,9 @@ class Maze:
         self.exitNode = []
         self.nodeList = []
         self.parse()
+	self.rosBool=None
+	self.instructionNumber=0
+
         
 
 
@@ -198,8 +201,8 @@ class Maze:
                 directionToGo=(outputArray[::-1])
                 directionTurn=self.turnDirections(outputArray[::-1])
                 poseArray=[]
-		pub=rospy.Publisher('chatter',PoseStamped, queue_size=1000)
-		rospy.init_node('demo_pub_node')		
+		pub=rospy.Publisher('aStarNode',PoseStamped, queue_size=1000)
+		rospy.init_node('aStarNode')		
 		r=rospy.Rate(1)
                 for index,direction in enumerate(directionToGo):
                     p=PoseStamped()
@@ -218,16 +221,25 @@ class Maze:
 		#Set up ROS publishing
 		
 		i=0
+		instructionNumberArray=[]
+                key = cv2.waitKey(1) & 0xFF
+		print("START PRINTING NOW")
                 while not rospy.is_shutdown():
 		    try:
-			pub.publish(poseArray[i])
-			key = cv2.waitKey(1) & 0xFF
-
-	   		# if the `q` key was pressed, break from the loop
-	   		if key == ord("i"):
-	      		    i+=1
+			print(self.instructionNumber)
+			listener()
+			print(self.rosBool)
+			if(str(self.rosBool)=="data: True" and self.instructionNumber not in instructionNumberArray):
+				
+				pub.publish(poseArray[i])
+				instructionNumberArray.append(self.instructionNumber)
+				i+=1
+		
+			time.sleep(1)
+			
 		    except Exception as e:
-		        print(e)
+			print(e)
+			i=0
 
                 return len(lowestWeightNode[0].nodesLeadingToThis) + 1  # Include +1 to add distance to goal
             exploredNodes.append(lowestWeightNode[0])
@@ -251,7 +263,16 @@ class Maze:
                     (lowestWeightNode[0].nodeRight, lowestWeightNode[0].nodeRight.hueristic + len(nodesBefore)))
         return -1
 
+def callback(data):
+	
+	maze.rosBool=data
+	maze.instructionNumber+=1
 
+def listener():
+	rospy.Subscriber("BoolTalk",std_msgs.msg.Bool,callback)
+	
+
+	
 #THIS IS FOR TESTING ONLY, WRITE MAIN CODE IN main.py
 if __name__ == "__main__":
     inmap1 = """%%%%%%%
@@ -259,6 +280,7 @@ if __name__ == "__main__":
 % %%% %
 %     %
 %%%%%%%"""
+    
 
     maze = Maze(inmap1)
     maze.aStar()
