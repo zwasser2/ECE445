@@ -1,22 +1,18 @@
 #It is better to create nodes to parse the files rather than use an array otherwise we will be repeating the same steps over and over again.
 
 class Node:
-    hueristic=-1
     character = ''
-    xLocation = -1
-    yLocation = -1
-    mapPosition = -1
+    hueristic = -1
     nodeLeft = None
     nodeRight = None
     nodeAbove = None
     nodeBelow = None
-    nodeAR= None #A=Above,B=Below,L=left,R=right
-    nodeAL= None
-    nodeBR=None
-    nodeBL=None
-
-
-
+    xLocation = -1
+    yLocation = -1
+    nodesLeadingToThis = [] #In Astar this keeps track of the nodes that where before it.
+    checked = 0
+    mapPosition = -1
+    nodeDistance = {}
 
 
     def __init__(self, nodeAbove, nodeBelow, nodeRight, nodeLeft, character):
@@ -25,8 +21,7 @@ class Node:
         self.nodeBelow = nodeBelow
         self.nodeLeft = nodeLeft
         self.nodeRight = nodeRight
-
-
+        self.nodeDistance={}
 
     def checkedNode(self):
         self.checked = 1
@@ -52,11 +47,9 @@ class Node:
         self.xLocation = x
         self.yLocation = y
 
-    def setEdge(self, edgeValue):
-        self.nodeDistance.append(edgeValue)
+    def setEdge(self, edgeValue, node):
+        self.nodeDistance[node] = edgeValue
 
-    def setLookup(self, edgeValue):
-        self.lookupTable.append(edgeValue)
 
 
     def getLocation(self):
@@ -83,15 +76,11 @@ class Node:
     def setCharacter(self, character):
         self.character = character
 
-    def setNodes(self, nodeAbove, nodeBelow, nodeRight, nodeLeft,nodeAL,nodeAR,nodeBL,nodeBR):
+    def setNodes(self, nodeAbove, nodeBelow, nodeRight, nodeLeft):
         self.nodeBelow = nodeBelow
         self.nodeAbove = nodeAbove
         self.nodeLeft = nodeLeft
         self.nodeRight = nodeRight
-        self.nodeAL=nodeAL
-        self.nodeAR=nodeAR
-        self.nodeBL=nodeBL
-        self.nodeBR=nodeBR
 
     def above(self):
         return self.nodeAbove
