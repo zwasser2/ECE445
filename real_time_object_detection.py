@@ -18,6 +18,9 @@ import cv2
 import rospy
 import math
 import tf
+import sensorMiddle
+import servoNeutral
+
 
 #from std_msgs.msg import String
 
@@ -59,6 +62,7 @@ rate = rospy.Rate(1)
 frameSize=400
 degreesToRadians=math.pi/180
 angleConversion=31.1/(frameSize/2)#31.1 degrees from center to left/right 
+servoNeutral.setGripOpen()#Have the servo be open and straight at start
 while not rospy.is_shutdown():
 	# loop over the frames from the video stream
 	while True:
@@ -104,44 +108,66 @@ while not rospy.is_shutdown():
 		
 		 if(label.split(':',1)[0]=='bottle'):
 		    average=(startX+endX)/2
-		    if(average>frameSize/2):#If it is to the RIGHT
-		       degreesToTurn=((average-frameSize/2)*angleConversion)*degreesToRadians
-		       q=tf.transformations.quaternion_from_euler(degreesToTurn,0,0)
-                   
-                       p=PoseStamped()
+		    degreesToTurn=((average-frameSize/2)*angleConversion)*degreesToRadians
+		    if(degreesToTurn>1):
+			    if(average>frameSize/2):#If it is to the RIGHT
+			       q=tf.transformations.quaternion_from_euler(degreesToTurn,0,0)
+		      
+		               p=PoseStamped()
 
-                    
-                       p.header.stamp=rospy.get_rostime()
-                       p.header.frame_id='/base_link'
-                       p.pose.position.x=0
-		       p.pose.position.y=0
-                       p.pose.position.z=0
-                       p.pose.orientation.x=q[0]
-                       p.pose.orientation.y=q[1]
-                       p.pose.orientation.z=q[2]
-                       p.pose.orientation.w=q[3]
-		       pub.publish(p) 
-                       rospy.loginfo("seq=%d" % p.header.seq)
-                       rate.sleep()
-  		    else:#If it is to the left or equal
-                       degreesToTurn=((frameSize/2-average)*angleConversion)*degreesToRadians*-1#The negative 1 is so it will turn to the left
-		       q=tf.transformations.quaternion_from_euler(degreesToTurn,0,0)
-                       p=PoseStamped()
+		            
+		               p.header.stamp=rospy.get_rostime()
+		               p.header.frame_id='/base_link'
+		               p.pose.position.x=0
+			       p.pose.position.y=0
+		               p.pose.position.z=0
+		               p.pose.orientation.x=q[0]
+		               p.pose.orientation.y=q[1]
+		               p.pose.orientation.z=q[2]
+		               p.pose.orientation.w=q[3]
+			       pub.publish(p) 
+		               rospy.loginfo("seq=%d" % p.header.seq)
+		               rate.sleep()
+	  		    else:#If it is to the left or equal
+		               degreesToTurn=degreesToTurn*-1#The negative 1 is so it will turn to the left
+			       q=tf.transformations.quaternion_from_euler(degreesToTurn,0,0)
+		               p=PoseStamped()
 
-                    
-                       p.header.stamp=rospy.get_rostime()
-                       p.header.frame_id='/base_link'
-                       p.pose.position.x=0
-		       p.pose.position.y=0
-                       p.pose.position.z=0
-                       p.pose.orientation.x=q[0]
-                       p.pose.orientation.y=q[1]
-                       p.pose.orientation.z=q[2]
-                       p.pose.orientation.w=q[3]
-		       pub.publish(p) 
-                       rospy.loginfo("seq=%d" % p.header.seq)
-                       rate.sleep()
-		# pub.publish(label)
+		            
+		               p.header.stamp=rospy.get_rostime()
+		               p.header.frame_id='/base_link'
+		               p.pose.position.x=0
+			       p.pose.position.y=0
+		               p.pose.position.z=0
+		               p.pose.orientation.x=q[0]
+		               p.pose.orientation.y=q[1]
+		               p.pose.orientation.z=q[2]
+		               p.pose.orientation.w=q[3]
+			       pub.publish(p) 
+		               rospy.loginfo("seq=%d" % p.header.seq)
+		               rate.sleep()
+			# pub.publish(label)
+		    elif(distanceToObject>10):
+		        distanceToMove=sensorMiddle.getDistance()#in CM
+			p=PoseStamped()
+
+	            
+	                p.header.stamp=rospy.get_rostime()
+	                p.header.frame_id='/base_link'
+	                p.pose.position.x=distanceToMove
+		        p.pose.position.y=0
+	                p.pose.position.z=0
+	                p.pose.orientation.x=0
+	                p.pose.orientation.y=0
+	                p.pose.orientation.z=0
+	                p.pose.orientation.w=0
+		        pub.publish(p) 
+	                rospy.loginfo("seq=%d" % p.header.seq)
+	                rate.sleep()
+		    else:
+			servoNeutral.setGripClose()
+			
+			
 		 
 		 print('sending data...')
 		 r.sleep()
